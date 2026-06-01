@@ -10,14 +10,9 @@ services:
       - app-network
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d TIGER"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   backend:
-    build: ./backend
+    build: ./BatimenTIGER            # CORRIGÉ ICI
     container_name: spring_backend
     ports:
       - "8090:8090"
@@ -28,15 +23,9 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s # Laisse le temps à Spring Boot de démarrer (JVM)
 
   frontend:
-    build: ./frontend
+    build: ./tiger-construction-front # CORRIGÉ ICI
     container_name: react_frontend
     ports:
       - "5173:5173"
