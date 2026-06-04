@@ -10,25 +10,39 @@ services:
       - app-network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d TIGER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build: ./BatimenTIGER            # CORRIGÉ ICI
+    build: ./BatimenTIGER
     container_name: spring_backend
     ports:
       - "8090:8090"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/TIGER
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=user
     depends_on:
       db:
         condition: service_healthy
     networks:
       - app-network
+    # CORRECTION : Utiliser 'curl -f http://localhost:8090/actuator/health || exit 1'
+    # pour assurer une sortie en erreur si le endpoint ne répond pas.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8090/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
-    build: ./tiger-construction-front # CORRIGÉ ICI
+    build: ./tiger-construction-front
     container_name: react_frontend
     ports:
-      - "5173:5173"
+      - "80:80"
     depends_on:
       backend:
         condition: service_healthy
