@@ -31,18 +31,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 2. PARTIE PUBLIQUE
+                        // Correction ici : on sépare les requestMatchers correctement
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/projets/accueil", "/api/projets/{id}",
                                 "/api/projets/categorie/**", "/api/projets/recherche").permitAll()
                         .requestMatchers("/api/public/messages").permitAll()
-                        .requestMatchers("/api/media/images/**").permitAll() // Autoriser l'accès aux images
+                        .requestMatchers("/api/media/images/**").permitAll()
 
                         // 3. AUTHENTIFICATION
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // 4. PROTECTION ADMIN (Tout ce qui est /api/admin/ est protégé)
-                        // Vos contrôleurs doivent utiliser @RequestMapping("/api/admin/...")
+                        // 4. PROTECTION ADMIN
                         .requestMatchers("/api/admin/**").authenticated()
-                        .requestMatchers("/api/projets/admin/**").authenticated() // IMPORTANT pour vos projets
+                        .requestMatchers("/api/projets/admin/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
