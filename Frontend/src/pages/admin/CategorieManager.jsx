@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { categorieService } from '../../services/categorieService.js';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
@@ -10,20 +10,18 @@ const CategorieManager = () => {
     const [formData, setFormData] = useState({ nom: '', description: '' });
     const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const refresh = () => setRefreshKey(k => k + 1);
 
-    const loadCategories = useCallback(async () => {
+    useEffect(() => {
+        let active = true;
         setLoading(true);
-        try {
-            const res = await categorieService.getAll();
-            setCategories(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error("Erreur de chargement", err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { loadCategories(); }, [loadCategories]);
+        categorieService.getAll()
+            .then(res => { if (active) setCategories(Array.isArray(res.data) ? res.data : []); })
+            .catch(err => console.error("Erreur de chargement", err))
+            .finally(() => { if (active) setLoading(false); });
+        return () => { active = false; };
+    }, [refreshKey]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,9 +29,9 @@ const CategorieManager = () => {
             editingId
                 ? await categorieService.update(editingId, formData)
                 : await categorieService.create(formData);
-            await loadCategories();
             setFormData({ nom: '', description: '' });
             setEditingId(null);
+            refresh();
         } catch {
             alert("Erreur lors de l'enregistrement");
         }

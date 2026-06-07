@@ -16,15 +16,16 @@ const ProjetManager = () => {
     });
     const [photos, setPhotos] = useState(null);
     const [plans, setPlans] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const refresh = () => setRefreshKey(k => k + 1);
 
-    const loadProjets = async () => {
-        try {
-            const res = await projetService.getAccueil();
-            setProjets(res.data);
-        } catch (err) { console.error("Erreur chargement:", err); }
-    };
-
-    useEffect(() => { loadProjets(); }, []);
+    useEffect(() => {
+        let active = true;
+        projetService.getAccueil()
+            .then(res => { if (active) setProjets(res.data); })
+            .catch(err => console.error("Erreur chargement:", err));
+        return () => { active = false; };
+    }, [refreshKey]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -40,7 +41,7 @@ const ProjetManager = () => {
             }
             setForm({ titre: '', description: '', localisation: '', budgetEstime: '', statut: 'ETUDE', categorieId: '' });
             setEditId(null);
-            loadProjets();
+            refresh();
         } catch { alert("Une erreur est survenue."); }
         finally { setIsSubmitting(false); }
     };
@@ -54,13 +55,13 @@ const ProjetManager = () => {
     const handleDelete = async (id) => {
         if (window.confirm("Supprimer ce projet définitivement ?")) {
             await projetService.supprimerProjet(id);
-            loadProjets();
+            refresh();
         }
     };
 
     const handleStatutChange = async (id, nouveauStatut) => {
         await projetService.modifierStatut(id, nouveauStatut);
-        loadProjets();
+        refresh();
     };
 
     return (

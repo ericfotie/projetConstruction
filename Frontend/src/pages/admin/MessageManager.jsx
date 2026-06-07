@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { messageService } from '../../services/messageService';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
@@ -8,16 +8,13 @@ import { PageHeader } from '../../ui/PageHeader';
 const MessageManager = () => {
     const [messages, setMessages] = useState([]);
 
-    const loadMessages = useCallback(async () => {
-        try {
-            const res = await messageService.getAll();
-            setMessages(res.data);
-        } catch (error) {
-            console.error("Erreur lors du chargement :", error);
-        }
+    useEffect(() => {
+        let active = true;
+        messageService.getAll()
+            .then(res => { if (active) setMessages(res.data); })
+            .catch(err => console.error("Erreur lors du chargement :", err));
+        return () => { active = false; };
     }, []);
-
-    useEffect(() => { loadMessages(); }, [loadMessages]);
 
     const handleTraite = async (id) => {
         try {

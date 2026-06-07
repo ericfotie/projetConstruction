@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 export function useInView(options = {}) {
     const ref = useRef(null);
     const [inView, setInView] = useState(false);
+    const optionsRef = useRef(options);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -12,7 +13,7 @@ export function useInView(options = {}) {
                     observer.disconnect();
                 }
             },
-            { threshold: 0.15, ...options }
+            { threshold: 0.15, ...optionsRef.current }
         );
 
         if (ref.current) observer.observe(ref.current);

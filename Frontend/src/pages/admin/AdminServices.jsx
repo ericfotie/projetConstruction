@@ -12,15 +12,16 @@ export const AdminServices = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ titre: '', description: '', iconeName: '', isActive: true });
     const [editingId, setEditingId] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const refresh = () => setRefreshKey(k => k + 1);
 
-    useEffect(() => { loadServices(); }, []);
-
-    const loadServices = async () => {
-        try {
-            const response = await fetchAllServices();
-            setServices(response.data);
-        } catch (error) { console.error("Erreur chargement services:", error); }
-    };
+    useEffect(() => {
+        let active = true;
+        fetchAllServices()
+            .then(res => { if (active) setServices(res.data); })
+            .catch(err => console.error("Erreur chargement services:", err));
+        return () => { active = false; };
+    }, [refreshKey]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -29,14 +30,14 @@ export const AdminServices = () => {
             setIsEditing(false);
             setEditingId(null);
             setFormData({ titre: '', description: '', iconeName: '', isActive: true });
-            loadServices();
+            refresh();
         } catch (error) { console.error("Erreur lors de l'enregistrement:", error); }
     };
 
     const startEdit = (service) => { setEditingId(service.id); setFormData(service); setIsEditing(true); };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Supprimer ce service ?")) { await deleteService(id); loadServices(); }
+        if (window.confirm("Supprimer ce service ?")) { await deleteService(id); refresh(); }
     };
 
     return (
@@ -104,7 +105,7 @@ export const AdminServices = () => {
                                 </td>
                                 <td className="p-6 text-right space-x-2">
                                     <Button variant="ghost" onClick={() => startEdit(s)}>Modifier</Button>
-                                    <Button variant="warning" onClick={() => toggleServiceStatus(s.id, !s.isActive).then(loadServices)}>Basculer</Button>
+                                    <Button variant="warning" onClick={() => toggleServiceStatus(s.id, !s.isActive).then(refresh)}>Basculer</Button>
                                     <Button variant="danger" onClick={() => handleDelete(s.id)}>Supprimer</Button>
                                 </td>
                             </tr>
