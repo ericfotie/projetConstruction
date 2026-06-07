@@ -1,60 +1,57 @@
 services:
-  db:
-    image: postgres:15
-    container_name: postgres_db
-    # Pas besoin de ports "5432:5432" sauf si tu veux te connecter
-    # depuis ton PC local avec DBeaver/pgAdmin. Sinon, supprime-les.
+  postgres:
+    container_name: tiger-postgres
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: TIGER
+      POSTGRES_DB: Constrution
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: user
-    networks:
-      - app-network
+      POSTGRES_PASSWORD: postgres
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d TIGER"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d Constrution"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
-    build: ./BatimenTIGER
-    container_name: spring_backend
-    ports:
-      - "8090:8090"
+    container_name: tiger-backend
+    build: ./Backend
+    expose:
+      - "8090"
     environment:
-      # UTILISE LE NOM DU SERVICE ("db") PAS LE CONTAINER_NAME
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/TIGER
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=user
-      - FRONTEND_URL=http://localhost
-    depends_on:
-      db:
-        condition: service_healthy
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/Constrution
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    volumes:
+      - uploads_data:/app/uploads
     networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://0.0.0.0:8090/actuator/health || exit 0"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
+      - backend-net
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
-    build: ./tiger-construction-front
-    container_name: react_frontend
-    ports:
-      - "80:80"
-    depends_on:
-      backend:
-        condition: service_healthy
+    container_name: tiger-frontend
+    build: ./Frontend
+    expose:
+      - "4173"
     networks:
-      - app-network
+      - frontend-net
+    depends_on:
+      - backend
 
 networks:
-  app-network:
+  backend-net:
+    driver: bridge
+    internal: true
+  frontend-net:
     driver: bridge
 
 volumes:
   postgres_data:
+  uploads_data:
