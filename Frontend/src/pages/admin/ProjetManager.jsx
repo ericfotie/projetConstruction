@@ -41,7 +41,7 @@ const ProjetManager = () => {
             setForm({ titre: '', description: '', localisation: '', budgetEstime: '', statut: 'ETUDE', categorieId: '' });
             setEditId(null);
             loadProjets();
-        } catch (err) { alert("Une erreur est survenue."); }
+        } catch { alert("Une erreur est survenue."); }
         finally { setIsSubmitting(false); }
     };
 

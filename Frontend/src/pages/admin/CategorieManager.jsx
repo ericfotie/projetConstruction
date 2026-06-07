@@ -34,7 +34,7 @@ const CategorieManager = () => {
             await loadCategories();
             setFormData({ nom: '', description: '' });
             setEditingId(null);
-        } catch (err) {
+        } catch {
             alert("Erreur lors de l'enregistrement");
         }
     };
@@ -44,7 +44,7 @@ const CategorieManager = () => {
             try {
                 await categorieService.delete(id);
                 setCategories(prev => prev.filter(c => c.id !== id));
-            } catch (err) {
+            } catch {
                 alert("Erreur lors de la suppression");
             }
         }

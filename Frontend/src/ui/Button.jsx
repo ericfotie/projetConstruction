@@ -25,7 +25,3 @@ export function Button({ children, variant = 'primary', size = 'md', className =
         </button>
     );
 }
-
-export function buttonClass(variant = 'primary', size = 'md') {
-    return `font-bold rounded-full transition-all ${variantClasses[variant]} ${sizeClasses[size]}`;
-}

@@ -14,7 +14,7 @@ const ContactForm = () => {
         try {
             await messageService.envoyer(form);
             setSent(true);
-        } catch (err) {
+        } catch {
             alert("Erreur lors de l'envoi du message.");
         }
     };
