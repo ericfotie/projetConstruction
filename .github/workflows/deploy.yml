@@ -13,11 +13,15 @@ env:
   JAVA_VERSION: "17"
   NODE_VERSION: "20"
   COMPOSE_FILE: docker-compose.yml
+  # Credentials de la base de données éphémère CI (non production)
+  CI_DB_NAME: constrution_ci
+  CI_DB_USER: tiger_ci
+  CI_DB_PASSWORD: tiger_ci_pwd
 
 # ═══════════════════════════════════════════════════════════════════
 #  STAGE 1 — VALIDATION
-#  Vérifie que la configuration docker-compose est syntaxiquement
-#  correcte avec les secrets avant tout autre travail.
+#  Vérifie que la configuration docker-compose est correcte
+#  avec les secrets de production avant tout autre travail.
 # ═══════════════════════════════════════════════════════════════════
 jobs:
   validate:
@@ -96,7 +100,7 @@ jobs:
         working-directory: Frontend
         run: npm ci
 
-      - name: Audit de sécurité des dépendances (npm)
+      - name: Audit de sécurité des dépendances
         working-directory: Frontend
         run: npm audit --audit-level=high || true
 
@@ -105,7 +109,7 @@ jobs:
         run: npm run lint
 
 # ═══════════════════════════════════════════════════════════════════
-#  STAGE 3 — TESTS  (backend avec base de données réelle)
+#  STAGE 3 — TESTS  (base de données éphémère CI)
 # ═══════════════════════════════════════════════════════════════════
   backend-tests:
     name: "Backend · Tests & Couverture"
@@ -117,13 +121,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: constrution_ci
+          POSTGRES_USER: tiger_ci
+          POSTGRES_PASSWORD: tiger_ci_pwd
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
+          --health-cmd "pg_isready -U tiger_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -142,10 +146,9 @@ jobs:
       - name: Exécution des tests
         working-directory: Backend
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ secrets.POSTGRES_DB }}
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.POSTGRES_USER }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ env.CI_DB_NAME }}
+          SPRING_DATASOURCE_USERNAME: ${{ env.CI_DB_USER }}
+          SPRING_DATASOURCE_PASSWORD: ${{ env.CI_DB_PASSWORD }}
         run: |
           set -euo pipefail
           ./mvnw test --no-transfer-progress
@@ -279,16 +282,15 @@ jobs:
     steps:
       - name: Rapport final du pipeline
         run: |
-          set -euo pipefail
           echo "════════════════════════════════════════════════"
           echo "   BatimenTIGER — Résultat CI"
           echo "════════════════════════════════════════════════"
-          echo "   Validation      : ${{ needs.validate.result }}"
-          echo "   Backend qualité : ${{ needs.backend-quality.result }}"
-          echo "   Frontend qualité: ${{ needs.frontend-quality.result }}"
-          echo "   Backend tests   : ${{ needs.backend-tests.result }}"
-          echo "   Backend build   : ${{ needs.backend-build.result }}"
-          echo "   Frontend build  : ${{ needs.frontend-build.result }}"
+          echo "   Validation       : ${{ needs.validate.result }}"
+          echo "   Backend  qualité : ${{ needs.backend-quality.result }}"
+          echo "   Frontend qualité : ${{ needs.frontend-quality.result }}"
+          echo "   Backend  tests   : ${{ needs.backend-tests.result }}"
+          echo "   Backend  build   : ${{ needs.backend-build.result }}"
+          echo "   Frontend build   : ${{ needs.frontend-build.result }}"
           echo "════════════════════════════════════════════════"
           echo "   Commit  : ${{ github.sha }}"
           echo "   Auteur  : ${{ github.actor }}"
@@ -296,12 +298,12 @@ jobs:
           echo "   Date    : $(date -u '+%Y-%m-%d %H:%M UTC')"
           echo "════════════════════════════════════════════════"
 
-          if [[ "${{ needs.validate.result }}"        != "success" || \
-                "${{ needs.backend-quality.result }}" != "success" || \
+          if [[ "${{ needs.validate.result }}"         != "success" || \
+                "${{ needs.backend-quality.result }}"  != "success" || \
                 "${{ needs.frontend-quality.result }}" != "success" || \
-                "${{ needs.backend-tests.result }}"   != "success" || \
-                "${{ needs.backend-build.result }}"   != "success" || \
-                "${{ needs.frontend-build.result }}"  != "success" ]]; then
+                "${{ needs.backend-tests.result }}"    != "success" || \
+                "${{ needs.backend-build.result }}"    != "success" || \
+                "${{ needs.frontend-build.result }}"   != "success" ]]; then
             echo ""
             echo "   ❌  CI ÉCHOUÉ — Consultez les logs ci-dessus."
             exit 1
